@@ -27,6 +27,14 @@ mdwt export path/to/doc.md -o dist/output.md [--skipheaders]
 
 Reads the entry Markdown file, resolves includes and variables, and writes the result to the specified output (stdout if omitted).
 
+### Export to clipboard
+
+```
+mdwt export path/to/doc.md -o clipboard [--skipheaders]
+```
+
+Reads the entry Markdown file, resolves includes and variables, and copies the result to the system clipboard.
+
 ### Build (in-place)
 
 ```

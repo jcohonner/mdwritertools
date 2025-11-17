@@ -5,7 +5,9 @@ program
   .command("export <filepath>")
   .option("-o, --output <outputPath>", "specify output path")
   .option("--skipheaders", "skip leading --- front matter block")
-  .description("build the final version from source file")
+  .description(
+    "export the final version from source file to another file or clipboard"
+  )
   .action((filepath, options) => {
     const mkdoc = require("./src/mdwt");
     mkdoc.build(filepath, options);
