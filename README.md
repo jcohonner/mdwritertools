@@ -13,7 +13,7 @@ It understands custom directives so you can include files, reuse sections, and s
 ## Installation
 
 - Local development: `npm link`
-- Global install: `npm install -g mdwritertools`
+- Global install: `npm install -g @jcohonner/mdwritertools`
 
 Once linked or installed, the CLI is available as `mdwt`.
 
