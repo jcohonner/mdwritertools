@@ -1,5 +1,5 @@
 {
-  "name": "mdwritertools",
+  "name": "@jcohonner/mdwritertools",
   "version": "0.0.1",
   "description": "Markdown Writer Tools is a set of tools to write doc in MarkDown and allow easy copy/paste to Google Docs",
   "main": "index.js",
