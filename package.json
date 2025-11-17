@@ -1,0 +1,20 @@
+{
+  "name": "mdwritertools",
+  "version": "0.0.1",
+  "description": "Markdown Writer Tools is a set of tools to write doc in MarkDown and allow easy copy/paste to Google Docs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "bin": {
+    "mdwt": "index.js"
+  },
+  "keywords": [
+    "markdown"
+  ],
+  "author": "Jérôme Cohonner",
+  "license": "MIT",
+  "dependencies": {
+    "commander": "^14.0.2"
+  }
+}
