@@ -9,6 +9,7 @@ It understands custom directives so you can include files, reuse sections, and s
 - Variables defined in YAML front‑matter and referenced with `{!var(name)!}` inside included files.
 - CLI commands to export to a new file or run a destructive build that replaces the source.
 - Optional `--skipheaders` flag to remove the leading front‑matter like block from the final output.
+- Local image references are converted to base64 data URIs automatically so exported Markdown stays self-contained.
 
 ## Installation
 
