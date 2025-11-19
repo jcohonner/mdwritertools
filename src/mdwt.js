@@ -16,7 +16,12 @@ class MdWT {
     }
 
     const absoluteEntryPath = path.resolve(process.cwd(), entryFilePath);
-    const { content, frontMatterRaw } = this.processFile(absoluteEntryPath, []);
+    const { content, frontMatterRaw } = this.processFile(
+      absoluteEntryPath,
+      [],
+      {},
+      options.img2b64
+    );
     let result = content;
 
     if (!options.skipheaders && frontMatterRaw) {
@@ -27,7 +32,7 @@ class MdWT {
     return result;
   }
 
-  processFile(filePath, stack, parentVars = {}) {
+  processFile(filePath, stack, parentVars = {}, img2b64 = false) {
     if (!fs.existsSync(filePath)) {
       throw new Error(`File not found: ${filePath}`);
     }
@@ -43,7 +48,8 @@ class MdWT {
       body,
       path.dirname(filePath),
       stack.concat(filePath),
-      mergedVars
+      mergedVars,
+      img2b64
     );
 
     return {
@@ -53,7 +59,7 @@ class MdWT {
     };
   }
 
-  processContent(content, baseDir, stack, variables = {}) {
+  processContent(content, baseDir, stack, variables = {}, img2b64 = false) {
     this.includeRegex.lastIndex = 0;
 
     let rendered = content.replace(this.includeRegex, (_, directive) => {
@@ -62,7 +68,9 @@ class MdWT {
     });
 
     rendered = this.replaceVariables(rendered, variables, stack);
-    rendered = this.inlineLocalImages(rendered, baseDir);
+    if (img2b64) {
+      rendered = this.inlineLocalImages(rendered, baseDir);
+    }
     return rendered;
   }
 
