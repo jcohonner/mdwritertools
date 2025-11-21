@@ -9,7 +9,7 @@ It understands custom directives so you can include files, reuse sections, and s
 - Variables defined in YAML front‑matter and referenced with `{!var(name)!}` inside included files.
 - CLI commands to export to a new file or run a destructive build that replaces the source.
 - Optional `--skipheaders` flag to remove the leading front‑matter like block from the final output.
-- Local image references are converted to base64 data URIs automatically so exported Markdown stays self-contained.
+- Optional `--img2b64` flag to convert local image references to base64 data URIs automatically so exported Markdown stays self-contained.
 
 ## Installation
 
@@ -23,7 +23,7 @@ Once linked or installed, the CLI is available as `mdwt`.
 ### Export
 
 ```
-mdwt export path/to/doc.md -o dist/output.md [--skipheaders]
+mdwt export path/to/doc.md -o dist/output.md [--skipheaders] [--img2b64]
 ```
 
 Reads the entry Markdown file, resolves includes and variables, and writes the result to the specified output (stdout if omitted).
@@ -31,7 +31,7 @@ Reads the entry Markdown file, resolves includes and variables, and writes the r
 ### Export to clipboard
 
 ```
-mdwt export path/to/doc.md -o clipboard [--skipheaders]
+mdwt export path/to/doc.md -o clipboard [--skipheaders] [--img2b64]
 ```
 
 Reads the entry Markdown file, resolves includes and variables, and copies the result to the system clipboard.
@@ -39,7 +39,7 @@ Reads the entry Markdown file, resolves includes and variables, and copies the r
 ### Build (in-place)
 
 ```
-mdwt build path/to/doc.md [--skipheaders]
+mdwt build path/to/doc.md [--skipheaders] [--img2b64]
 ```
 
 Resolves directives and writes the rendered content back to the same file. Useful when you need the source file without include directives.
