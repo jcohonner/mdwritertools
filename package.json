@@ -4,7 +4,7 @@
   "description": "Markdown Writer Tools is a set of tools to write doc in MarkDown and allow easy copy/paste to Google Docs",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node tests/run-tests.js"
   },
   "bin": {
     "mdwt": "index.js"

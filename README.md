@@ -7,6 +7,7 @@ It understands custom directives so you can include files, reuse sections, and s
 
 - `{!include(...)!}` directives with optional section filtering and heading level adjustment.
 - Variables defined in YAML front‑matter and referenced with `{!var(name)!}` inside included files.
+- Conditional blocks with `{!if name=value!} ... {!elseif name=value!} ... {!else!} ... {!endif!}` resolved using the entry document variables.
 - CLI commands to export to a new file or run a destructive build that replaces the source.
 - Optional `--skipheaders` flag to remove the leading front‑matter like block from the final output.
 - Optional `--img2b64` flag to convert local image references to base64 data URIs automatically so exported Markdown stays self-contained.
@@ -55,6 +56,11 @@ Resolves directives and writes the rendered content back to the same file. Usefu
 - Only the path is required.
 - Provide a `Section Heading` that matches a Markdown heading to include just that section.
 - Optionally set a target heading level (e.g., `###`) to rebase heading levels in the snippet.
+- You can insert variables into the path using `<varName>` placeholders that resolve against the upper variable values (after all includes are processed):
+
+```
+{!include(includes/product-<edition>.md)!}
+```
 
 ### Variables
 
@@ -67,6 +73,29 @@ product: MDWriterTools
 ```
 
 Use in content with `{!var(product)!}`. Variables cascade through includes, so definitions in a parent file are available in children.
+
+### Conditionals
+
+Wrap sections that should only appear when an upper variable value matches a value:
+
+```
+{!if edition=pro!}
+## Pro content
+{!elseif edition=community!}
+## Community content
+{!else!}
+## Default content
+{!endif!}
+```
+
+- Conditions are evaluated when a file is included.
+- The value from the top-level entry document is always used, even if a nested include defines its own variable with the same name.
+- Use alongside includes to ship a single source file that produces different outputs depending on the entry variables.
+
+## Examples and tests
+
+- Sample documents demonstrating includes, variables, and conditionals live in `examples/conditionals`.
+- Run `npm test` to render those examples and assert that conditional blocks respect the entry-level variables.
 
 ## Development
 
