@@ -92,6 +92,29 @@ Wrap sections that should only appear when an upper variable value matches a val
 - The value from the top-level entry document is always used, even if a nested include defines its own variable with the same name.
 - Use alongside includes to ship a single source file that produces different outputs depending on the entry variables.
 
+### Lists
+
+- Add an item anywhere with a block that is removed from the final output:
+
+```
+{!list-add backlog
+name: Item name
+description: ...
+status: ...
+priority: ...
+!}
+```
+
+- Render a table anywhere with the attributes and labels you need, and an optional path back to the section where the item was captured:
+
+```
+{!list-table(list=backlog|columns=name:Item,status,priority,path:Location)!}
+```
+
+- `list` defaults to `items` when omitted.
+- `columns` is a comma-separated list of `field[:Label]`. Include `path` to add a breadcrumb that links to the heading anchor where the item was added.
+- Headings are tracked across the whole document (after includes) so path links jump to the right section.
+
 ## Examples and tests
 
 - Sample documents demonstrating includes, variables, and conditionals live in `examples/conditionals`.

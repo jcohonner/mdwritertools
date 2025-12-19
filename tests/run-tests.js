@@ -20,6 +20,11 @@ const cases = [
     entry: "examples/conditionals/main-unknown.md",
     expected: "tests/expected/conditionals/main-unknown.md",
   },
+  {
+    name: "collects list items and renders backlog table with path links",
+    entry: "examples/lists/main.md",
+    expected: "tests/expected/lists/main.md",
+  },
 ];
 
 function render(entry) {
