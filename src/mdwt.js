@@ -15,16 +15,20 @@ class MdWT {
   }
 
   build(entryFilePath, options = {}) {
+    const result = this.renderDocument(entryFilePath, options);
+    this.outputResult(result, options.output);
+    return result;
+  }
+
+  renderDocument(entryFilePath, options = {}) {
     if (!entryFilePath) {
       throw new Error("An entry markdown file must be provided.");
     }
 
-    this.errors = [];
-    const absoluteEntryPath = path.resolve(process.cwd(), entryFilePath);
-    const rootVariables = this.collectVariables(absoluteEntryPath, [], {});
-    let result;
-
     try {
+      this.errors = [];
+      const absoluteEntryPath = path.resolve(process.cwd(), entryFilePath);
+      const rootVariables = this.collectVariables(absoluteEntryPath, [], {});
       const { content, frontMatterRaw } = this.processFile(
         absoluteEntryPath,
         [],
@@ -32,13 +36,14 @@ class MdWT {
         options.img2b64,
         rootVariables
       );
-      result = content;
-
-      if (!options.skipheaders && frontMatterRaw) {
-        result = frontMatterRaw + result;
-      }
-
-      this.outputResult(result, options.output);
+      const result = this.composeDocument(
+        content,
+        frontMatterRaw,
+        rootVariables,
+        options
+      );
+      this.reportErrors();
+      return result;
     } catch (error) {
       if (!error.recorded) {
         this.errors.push(error.message);
@@ -46,9 +51,6 @@ class MdWT {
       this.reportErrors();
       throw error;
     }
-
-    this.reportErrors();
-    return result;
   }
 
   processFile(
@@ -84,7 +86,8 @@ class MdWT {
       stack.concat(resolvedPath),
       mergedVars,
       img2b64,
-      rootVariables
+      rootVariables,
+      0
     );
     const finalContent =
       stack.length === 0
@@ -105,7 +108,8 @@ class MdWT {
     stack,
     variables = {},
     img2b64 = false,
-    rootVars = null
+    rootVars = null,
+    headingOffset = 0
   ) {
     const rootVariables = rootVars || variables;
     const prepared = this.processConditionalBlocks(
@@ -123,7 +127,8 @@ class MdWT {
         stack,
         variables,
         img2b64,
-        rootVariables
+        rootVariables,
+        headingOffset
       );
     });
 
@@ -181,12 +186,15 @@ class MdWT {
     stack,
     parentVars = {},
     img2b64 = false,
-    rootVars = null
+    rootVars = null,
+    headingOffset = 0
   ) {
-    const resolvedTemplate = this.applyVariablePlaceholders(
+    const currentFile =
+      stack && stack.length ? stack[stack.length - 1] : "<unknown>";
+    const { value: resolvedTemplate, placeholders } = this.resolveTemplateWithVariables(
       filePath,
       rootVars || parentVars,
-      stack && stack.length ? stack[stack.length - 1] : baseDir
+      currentFile || baseDir
     );
 
     if (!resolvedTemplate) {
@@ -202,41 +210,57 @@ class MdWT {
     }
 
     if (!fs.existsSync(resolvedPath)) {
-      return this.raiseError(`Included file not found: ${resolvedPath}`);
+      const info = this.recordMissingInclude(
+        resolvedPath,
+        currentFile,
+        placeholders
+      );
+      const fromSegment = info.from ? ` (from ${info.from})` : "";
+      return `<!-- missing ${info.path}${fromSegment} -->`;
     }
 
     const rawContent = fs.readFileSync(resolvedPath, "utf8");
     const { body, vars: localVars } = this.extractFrontMatter(rawContent);
-    let snippet = body;
-    let referenceLevel = null;
-
-    if (sectionTitle) {
-      const section = this.extractSection(snippet, sectionTitle);
-      snippet = section.content;
-      referenceLevel = section.level;
-    } else {
-      referenceLevel = this.detectLowestHeadingLevel(snippet);
-    }
-
+    const { content: snippetContent, level: referenceLevel } =
+      this.extractReference(body, sectionTitle);
     const mergedVars = this.mergeVariables(localVars, parentVars);
+    const shift = this.computeHeadingShift(
+      targetLevel,
+      referenceLevel,
+      headingOffset
+    );
+    const childHeadingOffset = headingOffset + shift;
+    const workingSnippet =
+      shift && snippetContent
+        ? this.shiftHeadingLevels(snippetContent, shift)
+        : snippetContent;
     const processedSnippet = this.processContent(
-      snippet,
+      workingSnippet,
       path.dirname(resolvedPath),
       stack.concat(resolvedPath),
       mergedVars,
       img2b64,
-      rootVars || parentVars
+      rootVars || parentVars,
+      childHeadingOffset
     );
 
-    if (!targetLevel) {
-      return processedSnippet;
+    if (!targetLevel && headingOffset) {
+      return this.shiftHeadingLevels(processedSnippet, headingOffset);
     }
 
-    return this.adjustToTargetLevel(
-      processedSnippet,
-      targetLevel,
-      referenceLevel
-    );
+    return processedSnippet;
+  }
+
+  extractReference(snippet, sectionTitle) {
+    if (sectionTitle) {
+      const section = this.extractSection(snippet, sectionTitle);
+      return { content: section.content, level: section.level };
+    }
+
+    return {
+      content: snippet,
+      level: this.detectLowestHeadingLevel(snippet),
+    };
   }
 
   extractSection(content, sectionTitle) {
@@ -295,7 +319,11 @@ class MdWT {
     return minLevel;
   }
 
-  adjustToTargetLevel(content, targetLevelSpec, referenceLevel) {
+  computeHeadingShift(targetLevelSpec, referenceLevel, headingOffset) {
+    if (!targetLevelSpec) {
+      return 0;
+    }
+
     const targetLevel = this.parseLevelSpec(targetLevelSpec);
 
     if (!targetLevel) {
@@ -304,13 +332,12 @@ class MdWT {
       );
     }
 
-    if (!referenceLevel) {
-      return content;
-    }
+    const effectiveReference = referenceLevel || headingOffset + 1;
+    return targetLevel + headingOffset - effectiveReference;
+  }
 
-    const shift = targetLevel - referenceLevel;
-
-    if (shift === 0) {
+  adjustHeadingLevels(content, shift) {
+    if (!shift) {
       return content;
     }
 
@@ -483,25 +510,12 @@ class MdWT {
   }
 
   applyVariablePlaceholders(rawValue, variables = {}, currentFile = "<unknown>") {
-    if (!rawValue) {
-      return rawValue;
-    }
-
-    return rawValue.replace(/<([^>]+)>/g, (match, rawName) => {
-      const name = rawName.trim();
-
-      if (!name) {
-        this.raiseError(`Invalid variable name in include path (${currentFile}).`);
-      }
-
-      if (!Object.prototype.hasOwnProperty.call(variables, name)) {
-        this.raiseError(
-          `Variable "${name}" is not defined (referenced in ${currentFile}).`
-        );
-      }
-
-      return variables[name];
-    });
+    const { value } = this.resolveTemplateWithVariables(
+      rawValue,
+      variables,
+      currentFile
+    );
+    return value;
   }
 
   collectVariables(filePath, stack = [], parentVars = {}) {
@@ -526,7 +540,7 @@ class MdWT {
 
     while (match) {
       const includeOptions = this.parseDirective(match[1]);
-      const includePath = this.applyVariablePlaceholders(
+      const { value: includePath, placeholders } = this.resolveTemplateWithVariables(
         includeOptions.filePath,
         accumulated,
         resolvedPath
@@ -540,7 +554,7 @@ class MdWT {
       const resolvedInclude = path.resolve(path.dirname(resolvedPath), includePath);
 
       if (!fs.existsSync(resolvedInclude)) {
-        this.raiseError(`Included file not found: ${resolvedInclude}`);
+        this.recordMissingInclude(resolvedInclude, resolvedPath, placeholders);
         match = includeRegex.exec(body);
         continue;
       }
@@ -696,6 +710,22 @@ class MdWT {
     return this.shouldKeepBlock(rawCondition, rootVars, currentFile);
   }
 
+  recordMissingInclude(filePath, fromFile = null, placeholders = []) {
+    const displayPath = path.relative(process.cwd(), filePath) || filePath;
+    const fromDisplay =
+      fromFile && fromFile !== "<unknown>"
+        ? path.relative(process.cwd(), fromFile) || fromFile
+        : null;
+    const message = fromDisplay
+      ? `Included file not found: ${displayPath} (included from ${fromDisplay})`
+      : `Included file not found: ${displayPath}`;
+    const variableHint = placeholders && placeholders.length
+      ? ` please check the variable ${placeholders.join(", ")} value.`
+      : "";
+    this.errors.push(`${message}${variableHint}`);
+    return { path: displayPath, from: fromDisplay };
+  }
+
   raiseError(message) {
     this.errors.push(message);
     const error = new Error(message);
@@ -753,14 +783,153 @@ class MdWT {
         return this.raiseError(`Invalid variable name in ${currentFile}`);
       }
 
-      if (!Object.prototype.hasOwnProperty.call(variables, name)) {
+      if (
+        !Object.prototype.hasOwnProperty.call(variables, name) ||
+        variables[name] === undefined ||
+        variables[name] === null
+      ) {
         return this.raiseError(
-          `Variable "${name}" is not defined (referenced in ${currentFile}).`
+          `Variable "${name}" is used but not declared or null (referenced in ${currentFile}).`
         );
       }
 
       return variables[name];
     });
+  }
+
+  resolveTemplateWithVariables(
+    rawValue,
+    variables = {},
+    currentFile = "<unknown>"
+  ) {
+    if (!rawValue) {
+      return { value: rawValue, placeholders: [] };
+    }
+
+    const placeholders = [];
+    const value = rawValue.replace(/<([^>]+)>/g, (match, rawName) => {
+      const name = rawName.trim();
+
+      if (!name) {
+        this.raiseError(
+          `Invalid variable name in include path (${currentFile}).`
+        );
+      }
+
+      if (
+        !Object.prototype.hasOwnProperty.call(variables, name) ||
+        variables[name] === undefined ||
+        variables[name] === null
+      ) {
+        this.raiseError(
+          `Variable "${name}" is used but not declared or null (referenced in ${currentFile}).`
+        );
+      }
+
+      placeholders.push(name);
+      return variables[name];
+    });
+
+    return { value, placeholders };
+  }
+
+  composeDocument(content, frontMatterRaw, rootVariables = {}, options = {}) {
+    const includeFrontMatter = !options.skipheaders;
+    const frontMatter = includeFrontMatter
+      ? this.renderFrontMatterBlock(rootVariables, frontMatterRaw)
+      : "";
+    const assembled = `${frontMatter || ""}${content || ""}`;
+    return this.prettifyMarkdown(assembled);
+  }
+
+  renderFrontMatterBlock(rootVariables = {}, frontMatterRaw = null) {
+    const keys = Object.keys(rootVariables || {});
+
+    if (!keys.length) {
+      return frontMatterRaw || "";
+    }
+
+    const newline = this.detectNewline(frontMatterRaw);
+    const bom = frontMatterRaw && frontMatterRaw.startsWith("\uFEFF") ? "\uFEFF" : "";
+    const lines = keys
+      .sort()
+      .map((key) => `${key}: ${rootVariables[key]}`);
+    return `${bom}---${newline}${lines.join(newline)}${newline}---${newline}${newline}`;
+  }
+
+  detectNewline(sample) {
+    if (!sample) {
+      return "\n";
+    }
+
+    return sample.includes("\r\n") ? "\r\n" : "\n";
+  }
+
+  prettifyMarkdown(content) {
+    if (!content) {
+      return "";
+    }
+
+    const normalized = content.replace(/\r\n/g, "\n");
+    const trimmedTrailingSpaces = normalized
+      .split("\n")
+      .map((line) => line.trimEnd())
+      .join("\n");
+    const collapsed = this.collapseBlankLines(trimmedTrailingSpaces);
+    const withoutTrailingBlankLines = collapsed.replace(/\n+$/g, "\n");
+
+    if (withoutTrailingBlankLines.endsWith("\n")) {
+      return withoutTrailingBlankLines;
+    }
+
+    return `${withoutTrailingBlankLines}\n`;
+  }
+
+  collapseBlankLines(content) {
+    const lines = content.split("\n");
+    const result = [];
+    let inFence = false;
+    let fenceChar = null;
+    let fenceLength = 0;
+    let previousBlank = false;
+
+    lines.forEach((line) => {
+      const trimmed = line.trim();
+
+      if (inFence) {
+        if (this.startsWithFence(trimmed, fenceChar, fenceLength)) {
+          inFence = false;
+          fenceChar = null;
+          fenceLength = 0;
+        }
+
+        result.push(line);
+        previousBlank = false;
+        return;
+      }
+
+      const fenceInfo = this.getFenceInfo(trimmed);
+
+      if (fenceInfo) {
+        inFence = true;
+        fenceChar = fenceInfo.char;
+        fenceLength = fenceInfo.length;
+        result.push(line);
+        previousBlank = false;
+        return;
+      }
+
+      const isBlank = trimmed === "";
+
+      if (isBlank && previousBlank) {
+        return;
+      }
+
+      result.push(line);
+      previousBlank = isBlank;
+    });
+
+    return result.join("\n");
   }
 
   outputResult(content, outputPath) {
