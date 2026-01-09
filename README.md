@@ -6,7 +6,7 @@ It understands custom directives so you can include files, reuse sections, and s
 ## Features
 
 - `{!include(...)!}` directives with optional section filtering and heading level adjustment.
-- Variables defined in YAML front‑matter and referenced with `{!var(name)!}` inside included files.
+- Variables defined in YAML front‑matter (including lists) and referenced with `{!var(name)!}` inside included files.
 - Conditional blocks with `{!if name=value!} ... {!elseif name=value!} ... {!else!} ... {!endif!}` resolved using the entry document variables.
 - CLI commands to export to a new file or run a destructive build that replaces the source.
 - Optional `--skipheaders` flag to remove the leading front‑matter like block from the final output.
@@ -72,7 +72,18 @@ product: MDWriterTools
 ---
 ```
 
+Lists are supported too:
+
+```yaml
+---
+tags:
+  - alpha
+  - beta
+---
+```
+
 Use in content with `{!var(product)!}`. Variables cascade through includes, so definitions in a parent file are available in children.
+When a variable is a list, items from included files are merged into the parent list (deduplicated).
 
 ### Conditionals
 
@@ -90,6 +101,7 @@ Wrap sections that should only appear when an upper variable value matches a val
 
 - Conditions are evaluated when a file is included.
 - The value from the top-level entry document is always used, even if a nested include defines its own variable with the same name.
+- When a variable is a list, `{!if name=value!}` checks whether the list contains `value`.
 - Use alongside includes to ship a single source file that produces different outputs depending on the entry variables.
 
 ### Lists

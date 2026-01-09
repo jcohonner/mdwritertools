@@ -57,6 +57,17 @@ const cases = [
     expected: "tests/expected/conditionals/main-pro-document.md",
     renderer: renderDocument,
   },
+  {
+    name: "merges list variables across includes and matches list conditionals",
+    entry: "examples/variables/list-merge.md",
+    expected: "tests/expected/variables/list-merge.md",
+  },
+  {
+    name: "renders merged list variables in entry front matter",
+    entry: "examples/variables/list-merge.md",
+    expected: "tests/expected/variables/list-merge-document.md",
+    renderer: renderDocument,
+  },
 ];
 
 function loadExpected(expectedPath) {
