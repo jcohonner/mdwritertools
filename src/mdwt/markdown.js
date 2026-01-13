@@ -19,6 +19,84 @@ module.exports = {
     return `${withoutTrailingBlankLines}\n`;
   },
 
+  stripHtmlComments(content) {
+    if (!content) {
+      return content;
+    }
+
+    const lines = content.split(/\r?\n/);
+    const result = [];
+    let inFence = false;
+    let fenceChar = null;
+    let fenceLength = 0;
+    let inComment = false;
+
+    lines.forEach((line) => {
+      if (inFence) {
+        const trimmed = line.trim();
+
+        if (this.startsWithFence(trimmed, fenceChar, fenceLength)) {
+          inFence = false;
+          fenceChar = null;
+          fenceLength = 0;
+        }
+
+        result.push(line);
+        return;
+      }
+
+      let output = "";
+      let cursor = 0;
+      let removed = false;
+
+      while (cursor < line.length) {
+        if (inComment) {
+          const endIndex = line.indexOf("-->", cursor);
+
+          if (endIndex === -1) {
+            removed = true;
+            cursor = line.length;
+            break;
+          }
+
+          cursor = endIndex + 3;
+          inComment = false;
+          removed = true;
+          continue;
+        }
+
+        const startIndex = line.indexOf("<!--", cursor);
+
+        if (startIndex === -1) {
+          output += line.slice(cursor);
+          break;
+        }
+
+        output += line.slice(cursor, startIndex);
+        cursor = startIndex + 4;
+        inComment = true;
+        removed = true;
+      }
+
+      if (output === "" && removed) {
+        return;
+      }
+
+      const outputTrimmed = output.trim();
+      const fenceInfo = this.getFenceInfo(outputTrimmed);
+
+      if (fenceInfo && !inComment) {
+        inFence = true;
+        fenceChar = fenceInfo.char;
+        fenceLength = fenceInfo.length;
+      }
+
+      result.push(output);
+    });
+
+    return result.join("\n");
+  },
+
   collapseBlankLines(content) {
     const lines = content.split("\n");
     const result = [];

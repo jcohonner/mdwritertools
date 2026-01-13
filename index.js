@@ -5,6 +5,7 @@ program
   .command("export <filepath>")
   .option("-o, --output <outputPath>", "specify output path")
   .option("--skipheaders", "skip leading --- front matter block")
+  .option("--stripcomments", "remove HTML comments from output")
   .option("--img2b64", "convert local images to base64")
   .description(
     "export the final version from source file to another file or clipboard"
@@ -18,6 +19,7 @@ program
   .command("build <filepath>")
   .description("replace include directives directly in the source file")
   .option("--skipheaders", "skip leading --- front matter block")
+  .option("--stripcomments", "remove HTML comments from output")
   .option("--img2b64", "convert local images to base64")
   .action((filepath, options) => {
     const mkdoc = require("./src/mdwt");

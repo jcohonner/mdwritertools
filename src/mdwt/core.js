@@ -366,7 +366,12 @@ class MdWT {
     const frontMatter = includeFrontMatter
       ? this.renderFrontMatterBlock(rootVariables, frontMatterRaw)
       : "";
-    const assembled = `${frontMatter || ""}${content || ""}`;
+    let assembled = `${frontMatter || ""}${content || ""}`;
+
+    if (options.stripcomments) {
+      assembled = this.stripHtmlComments(assembled);
+    }
+
     return this.prettifyMarkdown(assembled);
   }
 

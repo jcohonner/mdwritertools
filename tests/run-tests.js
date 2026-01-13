@@ -15,6 +15,13 @@ function renderDocument(entry) {
   return mdwt.renderDocument(absoluteEntry).trim();
 }
 
+function renderDocumentWithOptions(options) {
+  return (entry) => {
+    const absoluteEntry = path.resolve(__dirname, "..", entry);
+    return mdwt.renderDocument(absoluteEntry, options).trim();
+  };
+}
+
 const cases = [
   {
     name: "keeps Pro sections and ignores lower-level overrides",
@@ -67,6 +74,12 @@ const cases = [
     entry: "examples/variables/list-merge.md",
     expected: "tests/expected/variables/list-merge-document.md",
     renderer: renderDocument,
+  },
+  {
+    name: "strips HTML comments outside fenced code blocks",
+    entry: "tests/fixtures/comments.md",
+    expected: "tests/expected/comments.md",
+    renderer: renderDocumentWithOptions({ stripcomments: true }),
   },
 ];
 
