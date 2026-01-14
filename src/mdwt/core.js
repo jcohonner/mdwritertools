@@ -362,7 +362,8 @@ class MdWT {
   }
 
   composeDocument(content, frontMatterRaw, rootVariables = {}, options = {}) {
-    const includeFrontMatter = !options.skipheaders;
+    const stripHeaders = options.stripheaders || options.skipheaders;
+    const includeFrontMatter = !stripHeaders;
     const frontMatter = includeFrontMatter
       ? this.renderFrontMatterBlock(rootVariables, frontMatterRaw)
       : "";

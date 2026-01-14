@@ -4,6 +4,7 @@ const { program } = require("commander");
 program
   .command("export <filepath>")
   .option("-o, --output <outputPath>", "specify output path")
+  .option("--stripheaders", "strip leading --- front matter block")
   .option("--skipheaders", "skip leading --- front matter block")
   .option("--stripcomments", "remove HTML comments from output")
   .option("--img2b64", "convert local images to base64")
@@ -18,6 +19,7 @@ program
 program
   .command("build <filepath>")
   .description("replace include directives directly in the source file")
+  .option("--stripheaders", "strip leading --- front matter block")
   .option("--skipheaders", "skip leading --- front matter block")
   .option("--stripcomments", "remove HTML comments from output")
   .option("--img2b64", "convert local images to base64")
