@@ -1,18 +1,19 @@
 module.exports = {
-  processLists(content, currentFile = "<unknown>") {
+  processLists(content, currentFile = "<unknown>", listsConfig = {}) {
     if (!content) {
       return content;
     }
 
     const { contentWithoutItems, lists } = this.collectListItems(
       content,
-      currentFile
+      currentFile,
+      listsConfig
     );
 
     return this.renderListTables(contentWithoutItems, lists, currentFile);
   },
 
-  collectListItems(content, currentFile = "<unknown>") {
+  collectListItems(content, currentFile = "<unknown>", listsConfig = {}) {
     const lines = content.split(/\r?\n/);
     const result = [];
     const headingStack = [];
@@ -92,11 +93,24 @@ module.exports = {
           );
         }
 
+        let hasInline = false;
+        const attributeLines = blockLines.map((rawLine) => {
+          if (rawLine.trim() === "inline") {
+            hasInline = true;
+            return "";
+          }
+          return rawLine;
+        });
         const attributes = this.parseListAttributes(
-          blockLines,
+          attributeLines,
           currentFile,
           i + 2
         );
+        if (Object.prototype.hasOwnProperty.call(attributes, "inline")) {
+          hasInline = true;
+          delete attributes.inline;
+        }
+
         const pathText = headingStack.map((item) => item.text).join(" / ");
         const anchor = headingStack.length
           ? headingStack[headingStack.length - 1].anchor
@@ -107,6 +121,18 @@ module.exports = {
         }
 
         lists[listName].push({ attributes, pathText, anchor });
+
+        if (hasInline) {
+          const listConfig = listsConfig[listName];
+          if (listConfig && listConfig.inline) {
+            result.push("");
+            result.push(
+              this.resolveInlineTemplate(listConfig.inline, attributes)
+            );
+            result.push("");
+          }
+        }
+
         i = j + 1;
         continue;
       }
@@ -150,6 +176,14 @@ module.exports = {
     });
 
     return attributes;
+  },
+
+  resolveInlineTemplate(template, attributes = {}) {
+    return String(template).replace(/\$?\{([\w-]+)\}/g, (match, name) =>
+      Object.prototype.hasOwnProperty.call(attributes, name)
+        ? attributes[name]
+        : match
+    );
   },
 
   renderListTables(content, lists, currentFile = "<unknown>") {

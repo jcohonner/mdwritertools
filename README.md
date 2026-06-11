@@ -141,6 +141,28 @@ priority: ...
 - `columns` is a comma-separated list of `field[:Label]`. Include `path` to add a breadcrumb that links to the heading anchor where the item was added.
 - Headings are tracked across the whole document (after includes) so path links jump to the right section.
 
+#### Inline items
+
+Add the `inline` flag (no value) to a `list-add` block to also emit the item as a standard markdown paragraph where the block appears. The paragraph text comes from an `inline` template configured for that list in the entry front matter:
+
+```
+---
+lists:
+  backlog:
+    inline: "**${name}** — priority ${priority}"
+---
+
+{!list-add backlog
+name: Login
+priority: P1
+inline
+!}
+```
+
+- `${field}` (and the bare `{field}` form) in the template are replaced with the item's attribute values; unknown references are left untouched.
+- The `inline` flag is stripped from the item, so it never appears as a column in tables or exports.
+- The flag is only processed during `build` and `export` — `prebuild` keeps the raw `{!list-add ... !}` directive intact. The generated paragraph appears in `build` output; `export` simply drops the flag from the serialized data.
+
 ## Examples and tests
 
 - Sample documents demonstrating includes, variables, and conditionals live in `examples/conditionals`.

@@ -130,7 +130,11 @@ class MdWT {
     );
     const finalContent =
       stack.length === 0 && renderMode.processListsAtRoot !== false
-        ? this.processLists(processedContent, resolvedPath)
+        ? this.processLists(
+            processedContent,
+            resolvedPath,
+            this.parseListsConfig(frontMatterRaw || "")
+          )
         : processedContent;
 
     return {
@@ -158,19 +162,23 @@ class MdWT {
         : this.processConditionalBlocks(content, rootVariables, stack);
     this.includeRegex.lastIndex = 0;
 
-    let rendered = prepared.replace(this.includeRegex, (_, directive) => {
-      const includeOptions = this.parseDirective(directive);
-      return this.handleInclude(
-        includeOptions,
-        baseDir,
-        stack,
-        variables,
-        img2b64,
-        rootVariables,
-        headingOffset,
-        renderMode
-      );
-    });
+    let rendered = prepared.replace(
+      this.includeRegex,
+      (fullMatch, directive) => {
+        const includeOptions = this.parseDirective(directive);
+        return this.handleInclude(
+          includeOptions,
+          baseDir,
+          stack,
+          variables,
+          img2b64,
+          rootVariables,
+          headingOffset,
+          renderMode,
+          fullMatch
+        );
+      }
+    );
 
     if (renderMode.replaceVariables !== false) {
       rendered = this.replaceVariables(rendered, rootVariables, stack);
@@ -231,7 +239,8 @@ class MdWT {
     img2b64 = false,
     rootVars = null,
     headingOffset = 0,
-    renderMode = {}
+    renderMode = {},
+    originalDirective = null
   ) {
     const currentFile =
       stack && stack.length ? stack[stack.length - 1] : "<unknown>";
@@ -261,7 +270,10 @@ class MdWT {
         placeholders
       );
       const fromSegment = info.from ? ` (from ${info.from})` : "";
-      return `<!-- missing ${info.path}${fromSegment} -->`;
+      const directiveSegment = originalDirective
+        ? ` ${originalDirective.trim()}`
+        : "";
+      return `<!-- missing ${info.path}${fromSegment}:${directiveSegment} -->`;
     }
 
     const rawContent = fs.readFileSync(resolvedPath, "utf8");

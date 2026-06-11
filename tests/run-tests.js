@@ -27,6 +27,17 @@ function renderPrebuildDocument(entry) {
   return mdwt.renderPrebuildDocument(absoluteEntry).trim();
 }
 
+function serializeList(entry, listName, format) {
+  const absoluteEntry = path.resolve(__dirname, "..", entry);
+  const { lists, listsConfig } = mdwt.collectListsFromDocument(absoluteEntry);
+  const config = listsConfig[listName] || {};
+  const items = lists[listName] || [];
+  const columns = mdwt.resolveExportColumns(items, config.columns);
+  return format === "json"
+    ? mdwt.serializeListJSON(items, columns).trim()
+    : mdwt.serializeListCSV(items, columns).trim();
+}
+
 const cases = [
   {
     name: "keeps Pro sections and ignores lower-level overrides",
@@ -91,6 +102,36 @@ const cases = [
     entry: "tests/fixtures/prebuild.md",
     expected: "tests/expected/prebuild.md",
     renderer: renderPrebuildDocument,
+  },
+  {
+    name: "export-list: serializes list as CSV with column config and name override",
+    entry: "tests/fixtures/export-list.md",
+    expected: "tests/expected/export-list-backlog.csv",
+    renderer: (entry) => serializeList(entry, "backlog", "csv"),
+  },
+  {
+    name: "export-list: serializes list as JSON with column config",
+    entry: "tests/fixtures/export-list.md",
+    expected: "tests/expected/export-list-backlog.json",
+    renderer: (entry) => serializeList(entry, "backlog", "json"),
+  },
+  {
+    name: "export-list: serializes list as CSV with column config but no name override",
+    entry: "tests/fixtures/export-list.md",
+    expected: "tests/expected/export-list-notes.csv",
+    renderer: (entry) => serializeList(entry, "notes", "csv"),
+  },
+  {
+    name: "export-list: serializes list as CSV with auto-derived columns when no config",
+    entry: "tests/fixtures/export-list.md",
+    expected: "tests/expected/export-list-misc.csv",
+    renderer: (entry) => serializeList(entry, "misc", "csv"),
+  },
+  {
+    name: "build: renders inline list items as paragraphs from front matter template",
+    entry: "tests/fixtures/inline-list.md",
+    expected: "tests/expected/inline-list.md",
+    renderer: renderDocumentWithOptions({ stripheaders: true }),
   },
 ];
 

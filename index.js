@@ -42,4 +42,19 @@ program
     mkdoc.prebuild(filepath, options);
   });
 
+program
+  .command("export-list <filepath>")
+  .description("export lists from document to CSV or JSON files")
+  .option("--all", "export all lists (default when -l is not specified)")
+  .option("-l, --list <name>", "export a specific list by name")
+  .option(
+    "-o, --output <prefix>",
+    "output path prefix — filename will be prefix+listname.format (default: input file path without extension)"
+  )
+  .option("-f, --format <format>", "output format: csv (default) or json")
+  .action((filepath, options) => {
+    const mkdoc = require("./src/mdwt");
+    mkdoc.exportLists(filepath, options);
+  });
+
 program.parse(process.argv);

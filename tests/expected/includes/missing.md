@@ -2,6 +2,6 @@
 
 Before include.
 
-<!-- missing examples/includes/ghost.md (from examples/includes/missing.md) -->
+<!-- missing examples/includes/ghost.md (from examples/includes/missing.md): {!include(ghost.md)!} -->
 
 After include.
