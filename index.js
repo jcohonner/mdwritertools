@@ -9,7 +9,7 @@ program
   .option("--stripcomments", "remove HTML comments from output")
   .option("--img2b64", "convert local images to base64")
   .description(
-    "export the final version from source file to another file or clipboard"
+    "export the final version from source file to another file or clipboard",
   )
   .action((filepath, options) => {
     const mkdoc = require("./src/mdwt");
@@ -27,6 +27,19 @@ program
     const mkdoc = require("./src/mdwt");
     options.output = filepath;
     mkdoc.build(filepath, options);
+  });
+
+program
+  .command("prebuild <filepath>")
+  .description(
+    "replace include directives in source while keeping variable and list directives",
+  )
+  .option("--stripheaders", "strip leading --- front matter block")
+  .option("--img2b64", "convert local images to base64")
+  .action((filepath, options) => {
+    const mkdoc = require("./src/mdwt");
+    options.output = filepath;
+    mkdoc.prebuild(filepath, options);
   });
 
 program.parse(process.argv);

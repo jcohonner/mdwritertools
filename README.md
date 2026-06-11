@@ -9,6 +9,7 @@ It understands custom directives so you can include files, reuse sections, and s
 - Variables defined in YAML front‑matter (including lists) and referenced with `{!var(name)!}` inside included files.
 - Conditional blocks with `{!if name=value!} ... {!elseif name=value!} ... {!else!} ... {!endif!}` resolved using the entry document variables.
 - CLI commands to export to a new file or run a destructive build that replaces the source.
+- `prebuild` command to expand includes in place while keeping `{!var(...)!}` and list directives untouched.
 - Optional `--stripheaders` flag to remove the leading front‑matter like block from the final output.
 - Optional `--stripcomments` flag to remove HTML comment blocks outside fenced code blocks.
 - Optional `--img2b64` flag to convert local image references to base64 data URIs automatically so exported Markdown stays self-contained.
@@ -45,6 +46,18 @@ mdwt build path/to/doc.md [--stripheaders] [--stripcomments] [--img2b64]
 ```
 
 Resolves directives and writes the rendered content back to the same file. Useful when you need the source file without include directives.
+
+### Prebuild (in-place, directives preserved)
+
+```
+mdwt prebuild path/to/doc.md [--stripheaders] [--img2b64]
+```
+
+Expands include directives and resolves conditional blocks in place, while:
+- keeping `{!var(name)!}` tokens in the body
+- keeping list directives (`{!list-add ... !}` / `{!list-table(...)!}`)
+- keeping HTML comments (unless you post-process separately)
+- merging variables collected from the include hierarchy into the root front-matter block
 
 ## Directive Reference
 

@@ -85,6 +85,28 @@ module.exports = {
     );
   },
 
+  rebaseImagePaths(content, fromDir, toDir) {
+    if (!content || fromDir === toDir) return content;
+
+    this.imageRegex.lastIndex = 0;
+    return content.replace(
+      this.imageRegex,
+      (match, alt, rawTarget, titleDouble, titleSingle) => {
+        const linkTarget = this.normalizeLinkTarget(rawTarget);
+
+        if (!linkTarget || this.isExternalResource(linkTarget) || path.isAbsolute(linkTarget)) {
+          return match;
+        }
+
+        const absolutePath = path.resolve(fromDir, linkTarget);
+        const newRelativePath = path.relative(toDir, absolutePath).split(path.sep).join("/");
+        const title = titleDouble || titleSingle;
+        const titleSegment = title ? ` "${title}"` : "";
+        return `![${alt}](${newRelativePath}${titleSegment})`;
+      }
+    );
+  },
+
   getMimeType(filePath) {
     const extension = path.extname(filePath).toLowerCase();
     const catalog = {

@@ -20,7 +20,29 @@ class MdWT {
     return result;
   }
 
+  prebuild(entryFilePath, options = {}) {
+    const result = this.renderPrebuildDocument(entryFilePath, options);
+    this.outputResult(result, options.output);
+    return result;
+  }
+
   renderDocument(entryFilePath, options = {}) {
+    return this.renderWithOptions(entryFilePath, options, {
+      replaceVariables: true,
+      processListsAtRoot: true,
+      processConditionals: true,
+    });
+  }
+
+  renderPrebuildDocument(entryFilePath, options = {}) {
+    return this.renderWithOptions(entryFilePath, options, {
+      replaceVariables: false,
+      processListsAtRoot: false,
+      processConditionals: true,
+    });
+  }
+
+  renderWithOptions(entryFilePath, options = {}, renderMode = {}) {
     if (!entryFilePath) {
       throw new Error("An entry markdown file must be provided.");
     }
@@ -28,13 +50,28 @@ class MdWT {
     try {
       this.errors = [];
       const absoluteEntryPath = path.resolve(process.cwd(), entryFilePath);
+      const effectiveRenderMode = {
+        replaceVariables:
+          renderMode.replaceVariables === undefined
+            ? true
+            : Boolean(renderMode.replaceVariables),
+        processListsAtRoot:
+          renderMode.processListsAtRoot === undefined
+            ? true
+            : Boolean(renderMode.processListsAtRoot),
+        processConditionals:
+          renderMode.processConditionals === undefined
+            ? true
+            : Boolean(renderMode.processConditionals),
+      };
       const rootVariables = this.collectVariables(absoluteEntryPath, [], {});
       const { content, frontMatterRaw } = this.processFile(
         absoluteEntryPath,
         [],
         {},
         options.img2b64,
-        rootVariables
+        rootVariables,
+        effectiveRenderMode
       );
       const result = this.composeDocument(
         content,
@@ -58,7 +95,8 @@ class MdWT {
     stack = [],
     parentVars = {},
     img2b64 = false,
-    rootVars = null
+    rootVars = null,
+    renderMode = {}
   ) {
     if (stack.length === 0) {
       this.errors = [];
@@ -87,10 +125,11 @@ class MdWT {
       mergedVars,
       img2b64,
       rootVariables,
-      0
+      0,
+      renderMode
     );
     const finalContent =
-      stack.length === 0
+      stack.length === 0 && renderMode.processListsAtRoot !== false
         ? this.processLists(processedContent, resolvedPath)
         : processedContent;
 
@@ -109,14 +148,14 @@ class MdWT {
     variables = {},
     img2b64 = false,
     rootVars = null,
-    headingOffset = 0
+    headingOffset = 0,
+    renderMode = {}
   ) {
     const rootVariables = rootVars || variables;
-    const prepared = this.processConditionalBlocks(
-      content,
-      rootVariables,
-      stack
-    );
+    const prepared =
+      renderMode.processConditionals === false
+        ? content
+        : this.processConditionalBlocks(content, rootVariables, stack);
     this.includeRegex.lastIndex = 0;
 
     let rendered = prepared.replace(this.includeRegex, (_, directive) => {
@@ -128,11 +167,15 @@ class MdWT {
         variables,
         img2b64,
         rootVariables,
-        headingOffset
+        headingOffset,
+        renderMode
       );
     });
 
-    rendered = this.replaceVariables(rendered, rootVariables, stack);
+    if (renderMode.replaceVariables !== false) {
+      rendered = this.replaceVariables(rendered, rootVariables, stack);
+    }
+
     if (img2b64) {
       rendered = this.inlineLocalImages(rendered, baseDir);
     }
@@ -187,7 +230,8 @@ class MdWT {
     parentVars = {},
     img2b64 = false,
     rootVars = null,
-    headingOffset = 0
+    headingOffset = 0,
+    renderMode = {}
   ) {
     const currentFile =
       stack && stack.length ? stack[stack.length - 1] : "<unknown>";
@@ -235,21 +279,28 @@ class MdWT {
       shift && snippetContent
         ? this.shiftHeadingLevels(snippetContent, shift)
         : snippetContent;
+    const childDir = path.dirname(resolvedPath);
     const processedSnippet = this.processContent(
       workingSnippet,
-      path.dirname(resolvedPath),
+      childDir,
       stack.concat(resolvedPath),
       mergedVars,
       img2b64,
       rootVars || parentVars,
-      childHeadingOffset
+      childHeadingOffset,
+      renderMode
     );
 
+    const rebasedSnippet =
+      !img2b64 && childDir !== baseDir
+        ? this.rebaseImagePaths(processedSnippet, childDir, baseDir)
+        : processedSnippet;
+
     if (!targetLevel && headingOffset) {
-      return this.shiftHeadingLevels(processedSnippet, headingOffset);
+      return this.shiftHeadingLevels(rebasedSnippet, headingOffset);
     }
 
-    return processedSnippet;
+    return rebasedSnippet;
   }
 
   extractReference(snippet, sectionTitle) {

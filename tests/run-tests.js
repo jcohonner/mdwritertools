@@ -22,6 +22,11 @@ function renderDocumentWithOptions(options) {
   };
 }
 
+function renderPrebuildDocument(entry) {
+  const absoluteEntry = path.resolve(__dirname, "..", entry);
+  return mdwt.renderPrebuildDocument(absoluteEntry).trim();
+}
+
 const cases = [
   {
     name: "keeps Pro sections and ignores lower-level overrides",
@@ -80,6 +85,12 @@ const cases = [
     entry: "tests/fixtures/comments.md",
     expected: "tests/expected/comments.md",
     renderer: renderDocumentWithOptions({ stripcomments: true }),
+  },
+  {
+    name: "prebuild expands includes while preserving vars, comments and list directives",
+    entry: "tests/fixtures/prebuild.md",
+    expected: "tests/expected/prebuild.md",
+    renderer: renderPrebuildDocument,
   },
 ];
 
