@@ -164,6 +164,10 @@ priority: P1
 - The `inline` flag is stripped from the item, so it never appears as a column in tables or exports.
 - Inline output is only produced during `build` and `export` — `prebuild` keeps the raw `{!list-add ... !}` directive intact. The generated paragraph appears in `build` output; `export` simply drops the flag from the serialized data.
 
+## VS Code extension
+
+The same engine is available as a VS Code extension in [`vscode-extension/`](vscode-extension). It exposes **Build**, **Prebuild**, **Export to Clipboard**, and **Export Lists as CSV/JSON** as commands (Command Palette and editor context menu) acting on the active Markdown file. Clipboard export defaults to `img2b64: true` and `stripheaders: true` (configurable in settings). See [`vscode-extension/README.md`](vscode-extension/README.md) for development and packaging.
+
 ## Examples and tests
 
 - Sample documents demonstrating includes, variables, and conditionals live in `examples/conditionals`.

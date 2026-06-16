@@ -1,0 +1,7 @@
+.vscode/**
+esbuild.js
+extension.js
+test-smoke.js
+**/*.map
+.gitignore
+node_modules/**

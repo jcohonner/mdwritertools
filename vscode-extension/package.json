@@ -1,0 +1,162 @@
+{
+  "name": "mdwritertools-vscode",
+  "displayName": "Markdown Writer Tools",
+  "description": "Compose large Markdown documents from snippets: build/prebuild includes, export to clipboard, and export lists as CSV/JSON — powered by the mdwt engine.",
+  "version": "0.4.2",
+  "publisher": "jcohonner",
+  "license": "MIT",
+  "author": "Jérôme Cohonner",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jcohonner/mdwritertools.git"
+  },
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "markdown",
+    "include",
+    "documentation",
+    "clipboard"
+  ],
+  "main": "./out/extension.js",
+  "activationEvents": [
+    "onLanguage:markdown"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "mdwt.build",
+        "title": "Build (resolve includes in place)",
+        "category": "Markdown Writer Tools"
+      },
+      {
+        "command": "mdwt.prebuild",
+        "title": "Prebuild (expand includes, keep directives)",
+        "category": "Markdown Writer Tools"
+      },
+      {
+        "command": "mdwt.exportToClipboard",
+        "title": "Export to Clipboard",
+        "category": "Markdown Writer Tools"
+      },
+      {
+        "command": "mdwt.exportListsCSV",
+        "title": "Export Lists as CSV",
+        "category": "Markdown Writer Tools"
+      },
+      {
+        "command": "mdwt.exportListsJSON",
+        "title": "Export Lists as JSON",
+        "category": "Markdown Writer Tools"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "submenu": "mdwt.submenu",
+          "group": "1_modification",
+          "when": "editorLangId == markdown"
+        }
+      ],
+      "mdwt.submenu": [
+        {
+          "command": "mdwt.exportToClipboard",
+          "group": "1_export@1"
+        },
+        {
+          "command": "mdwt.build",
+          "group": "2_build@1"
+        },
+        {
+          "command": "mdwt.prebuild",
+          "group": "2_build@2"
+        },
+        {
+          "command": "mdwt.exportListsCSV",
+          "group": "3_lists@1"
+        },
+        {
+          "command": "mdwt.exportListsJSON",
+          "group": "3_lists@2"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "mdwt.build",
+          "when": "editorLangId == markdown"
+        },
+        {
+          "command": "mdwt.prebuild",
+          "when": "editorLangId == markdown"
+        },
+        {
+          "command": "mdwt.exportToClipboard",
+          "when": "editorLangId == markdown"
+        },
+        {
+          "command": "mdwt.exportListsCSV",
+          "when": "editorLangId == markdown"
+        },
+        {
+          "command": "mdwt.exportListsJSON",
+          "when": "editorLangId == markdown"
+        }
+      ]
+    },
+    "submenus": [
+      {
+        "id": "mdwt.submenu",
+        "label": "Markdown Writer Tools"
+      }
+    ],
+    "configuration": {
+      "title": "Markdown Writer Tools",
+      "properties": {
+        "mdwt.clipboard.img2b64": {
+          "type": "boolean",
+          "default": true,
+          "description": "When exporting to the clipboard, convert local image references to base64 data URIs so the Markdown stays self-contained."
+        },
+        "mdwt.clipboard.stripheaders": {
+          "type": "boolean",
+          "default": true,
+          "description": "When exporting to the clipboard, strip the leading front-matter (---) block from the output."
+        },
+        "mdwt.clipboard.stripcomments": {
+          "type": "boolean",
+          "default": false,
+          "description": "When exporting to the clipboard, remove HTML comment blocks (outside fenced code) from the output."
+        },
+        "mdwt.build.img2b64": {
+          "type": "boolean",
+          "default": false,
+          "description": "When running Build/Prebuild in place, convert local image references to base64 data URIs."
+        },
+        "mdwt.build.stripheaders": {
+          "type": "boolean",
+          "default": false,
+          "description": "When running Build in place, strip the leading front-matter (---) block from the output."
+        },
+        "mdwt.build.stripcomments": {
+          "type": "boolean",
+          "default": false,
+          "description": "When running Build in place, remove HTML comment blocks (outside fenced code) from the output."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run package",
+    "compile": "node esbuild.js",
+    "watch": "node esbuild.js --watch",
+    "package": "node esbuild.js --production"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.75.0",
+    "esbuild": "^0.28.0"
+  }
+}

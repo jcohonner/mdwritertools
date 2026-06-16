@@ -122,9 +122,7 @@ module.exports = {
     );
 
     if (!Object.prototype.hasOwnProperty.call(rootVars, name)) {
-      return this.raiseError(
-        `Variable "${name}" is not defined in the entry document (referenced in ${currentFile}).`
-      );
+      return false;
     }
 
     const value = rootVars[name];
