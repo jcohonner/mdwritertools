@@ -93,10 +93,16 @@ module.exports = {
           );
         }
 
-        let hasInline = false;
+        // Inline rendering is on by default; an item only opts out with an
+        // explicit `inline: false` (or a bare `noinline` flag).
+        let inline = true;
         const attributeLines = blockLines.map((rawLine) => {
-          if (rawLine.trim() === "inline") {
-            hasInline = true;
+          const flag = rawLine.trim();
+          if (flag === "inline") {
+            return "";
+          }
+          if (flag === "noinline" || flag === "no-inline") {
+            inline = false;
             return "";
           }
           return rawLine;
@@ -107,7 +113,7 @@ module.exports = {
           i + 2
         );
         if (Object.prototype.hasOwnProperty.call(attributes, "inline")) {
-          hasInline = true;
+          inline = this.parseInlineFlag(attributes.inline);
           delete attributes.inline;
         }
 
@@ -122,8 +128,9 @@ module.exports = {
 
         lists[listName].push({ attributes, pathText, anchor });
 
-        if (hasInline) {
+        if (inline) {
           const listConfig = listsConfig[listName];
+          // No inline template configured for this list → no inline output.
           if (listConfig && listConfig.inline) {
             result.push("");
             result.push(
@@ -176,6 +183,16 @@ module.exports = {
     });
 
     return attributes;
+  },
+
+  parseInlineFlag(rawValue) {
+    if (rawValue === undefined || rawValue === null || rawValue === "") {
+      return true;
+    }
+
+    return !["false", "no", "off", "0"].includes(
+      String(rawValue).trim().toLowerCase()
+    );
   },
 
   resolveInlineTemplate(template, attributes = {}) {

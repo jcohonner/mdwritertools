@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(node tests/run-tests.js)",
-      "Bash(node -e \"const m=require\\('./src/mdwt'\\); process.stdout.write\\(m.renderDocument\\(require\\('path'\\).resolve\\('examples/includes/missing.md'\\)\\).trim\\(\\)+'\\\\n'\\);\")"
+      "Bash(node -e \"const m=require\\('./src/mdwt'\\); process.stdout.write\\(m.renderDocument\\(require\\('path'\\).resolve\\('examples/includes/missing.md'\\)\\).trim\\(\\)+'\\\\n'\\);\")",
+      "Bash(npm view *)",
+      "Bash(node -e ' *)"
     ]
   }
 }

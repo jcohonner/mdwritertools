@@ -1,7 +1,7 @@
 ---
-client: toto
 edition: pro
 owner: docs-team
+client: toto
 ---
 
 # Release Notes

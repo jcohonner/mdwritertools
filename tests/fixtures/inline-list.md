@@ -15,7 +15,6 @@ lists:
 name: Login
 priority: P1
 owner: Ada
-inline
 !}
 
 Some narrative text follows the inline item.
@@ -26,6 +25,13 @@ Some narrative text follows the inline item.
 name: MFA
 priority: P2
 owner: Lin
+!}
+
+{!list-add backlog
+name: SSO
+priority: P3
+owner: Sam
+inline: false
 !}
 
 {!list-table(list=backlog|columns=name:Item,priority:Priority)!}

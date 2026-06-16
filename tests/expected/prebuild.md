@@ -1,11 +1,11 @@
 ---
-client: toto
 edition: pro
 owner: docs-team
 tags:
-  - beta
-  - shared
   - alpha
+  - shared
+  - beta
+client: toto
 ---
 
 # Prebuild root

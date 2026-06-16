@@ -1,8 +1,8 @@
 ---
 tags:
-  - beta
-  - shared
   - alpha
+  - shared
+  - beta
 ---
 
 # List merge

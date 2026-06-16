@@ -3,39 +3,56 @@ const path = require("path");
 
 module.exports = {
   mergeVariables(localVars = {}, parentVars = {}) {
-    const merged = { ...localVars };
+    const merged = {};
 
+    // Preserve the parent (root/ancestor) ordering first so the rendered
+    // front matter keeps the same key order as the parent file.
     Object.keys(parentVars || {}).forEach((key) => {
-      if (!Object.prototype.hasOwnProperty.call(merged, key)) {
-        merged[key] = parentVars[key];
-        return;
-      }
-
-      const localValue = merged[key];
       const parentValue = parentVars[key];
 
-      if (Array.isArray(localValue) || Array.isArray(parentValue)) {
-        const localList = Array.isArray(localValue) ? localValue : [localValue];
-        const parentList = Array.isArray(parentValue)
-          ? parentValue
-          : [parentValue];
-        const combined = [...localList, ...parentList];
-        const seen = new Set();
-        merged[key] = combined.filter((item) => {
-          const token = String(item);
-          if (seen.has(token)) {
-            return false;
-          }
-          seen.add(token);
-          return true;
-        });
+      if (!Object.prototype.hasOwnProperty.call(localVars, key)) {
+        merged[key] = parentValue;
         return;
       }
 
+      const localValue = localVars[key];
+
+      if (Array.isArray(localValue) || Array.isArray(parentValue)) {
+        merged[key] = this.mergeListValues(parentValue, localValue);
+        return;
+      }
+
+      // Scalar conflict: the parent (root/ancestor) value wins.
       merged[key] = parentValue;
     });
 
+    // Append keys introduced locally that the parent did not declare, in
+    // their original order, so new variables land at the bottom.
+    Object.keys(localVars || {}).forEach((key) => {
+      if (!Object.prototype.hasOwnProperty.call(merged, key)) {
+        merged[key] = localVars[key];
+      }
+    });
+
     return merged;
+  },
+
+  mergeListValues(parentValue, localValue) {
+    const parentList = Array.isArray(parentValue)
+      ? parentValue
+      : [parentValue];
+    const localList = Array.isArray(localValue) ? localValue : [localValue];
+    const combined = [...parentList, ...localList];
+    const seen = new Set();
+
+    return combined.filter((item) => {
+      const token = String(item);
+      if (seen.has(token)) {
+        return false;
+      }
+      seen.add(token);
+      return true;
+    });
   },
 
   applyVariablePlaceholders(rawValue, variables = {}, currentFile = "<unknown>") {

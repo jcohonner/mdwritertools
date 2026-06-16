@@ -143,7 +143,7 @@ priority: ...
 
 #### Inline items
 
-Add the `inline` flag (no value) to a `list-add` block to also emit the item as a standard markdown paragraph where the block appears. The paragraph text comes from an `inline` template configured for that list in the entry front matter:
+A `list-add` block also emits the item as a standard markdown paragraph where the block appears, using an `inline` template configured for that list in the entry front matter. Inline output is **on by default** — it happens automatically whenever the list defines an `inline` template:
 
 ```
 ---
@@ -155,13 +155,14 @@ lists:
 {!list-add backlog
 name: Login
 priority: P1
-inline
 !}
 ```
 
+- If a list has **no `inline` template** configured in the front matter, no inline paragraph is produced for its items.
+- To skip inline output for a single item, add `inline: false` (or a bare `noinline` flag) to its `list-add` block.
 - `${field}` (and the bare `{field}` form) in the template are replaced with the item's attribute values; unknown references are left untouched.
 - The `inline` flag is stripped from the item, so it never appears as a column in tables or exports.
-- The flag is only processed during `build` and `export` — `prebuild` keeps the raw `{!list-add ... !}` directive intact. The generated paragraph appears in `build` output; `export` simply drops the flag from the serialized data.
+- Inline output is only produced during `build` and `export` — `prebuild` keeps the raw `{!list-add ... !}` directive intact. The generated paragraph appears in `build` output; `export` simply drops the flag from the serialized data.
 
 ## Examples and tests
 

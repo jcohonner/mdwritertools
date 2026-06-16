@@ -92,6 +92,12 @@ const cases = [
     renderer: renderDocument,
   },
   {
+    name: "preserves front matter key order, nested mappings and list order while appending new variables",
+    entry: "tests/fixtures/front-matter-order.md",
+    expected: "tests/expected/front-matter-order.md",
+    renderer: renderDocument,
+  },
+  {
     name: "strips HTML comments outside fenced code blocks",
     entry: "tests/fixtures/comments.md",
     expected: "tests/expected/comments.md",
