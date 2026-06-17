@@ -98,6 +98,12 @@ const cases = [
     renderer: renderDocument,
   },
   {
+    name: "resolves nested front matter via dotted notation in var() and conditionals",
+    entry: "tests/fixtures/dotted-vars.md",
+    expected: "tests/expected/dotted-vars.md",
+    renderer: renderDocument,
+  },
+  {
     name: "strips HTML comments outside fenced code blocks",
     entry: "tests/fixtures/comments.md",
     expected: "tests/expected/comments.md",

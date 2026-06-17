@@ -99,6 +99,18 @@ tags:
 Use in content with `{!var(product)!}`. Variables cascade through includes, so definitions in a parent file are available in children.
 When a variable is a list, items from included files are merged into the parent list (deduplicated).
 
+Nested mappings can be reached with **dotted notation**. Given:
+
+```yaml
+---
+lists:
+  checklist:
+    drive-file: ABC
+---
+```
+
+reference the leaf value with `{!var(lists.checklist.drive-file)!}` (resolves to `ABC`). Dotted paths work the same way in include paths (`<lists.checklist.drive-file>`) and conditionals (`{!if lists.checklist.drive-file=ABC!}`). A dotted path must resolve to a scalar (or list) leaf — referencing an intermediate mapping is reported as an error. The nested block itself is preserved verbatim in the rendered front matter.
+
 ### Conditionals
 
 Wrap sections that should only appear when an upper variable value matches a value:

@@ -159,13 +159,85 @@ module.exports = {
 
       if (entry.type === "sequence") {
         vars[entry.key] = entry.items.slice();
+        return;
       }
 
-      // "block" (nested mapping) and "raw" entries are intentionally not
-      // exposed as variables — they are preserved structurally on render.
+      if (entry.type === "block") {
+        // Expose nested mappings as structured objects so they can be
+        // referenced with dotted notation, e.g. {!var(lists.checklist.id)!}.
+        // They are still preserved verbatim on render via their childLines.
+        vars[entry.key] = this.parseBlockMapping(entry.childLines);
+        return;
+      }
+
+      // "raw" entries are intentionally not exposed as variables.
     });
 
     return vars;
+  },
+
+  // Recursively parse an indented front-matter block (the childLines of a
+  // mapping key) into a nested object. Scalars become strings, "- " blocks
+  // become arrays, and deeper mappings recurse into nested objects.
+  parseBlockMapping(childLines) {
+    const indentOf = (line) => line.length - line.replace(/^\s*/, "").length;
+    const lines = (childLines || []).filter((line) => line && line.trim());
+    const result = {};
+
+    if (!lines.length) {
+      return result;
+    }
+
+    const baseIndent = indentOf(lines[0]);
+    let i = 0;
+
+    while (i < lines.length) {
+      const line = lines[i];
+
+      // Lines deeper than the current level are consumed by recursion below.
+      if (indentOf(line) > baseIndent) {
+        i += 1;
+        continue;
+      }
+
+      const trimmed = line.trim();
+      const separatorIndex = trimmed.indexOf(":");
+
+      if (separatorIndex === -1) {
+        i += 1;
+        continue;
+      }
+
+      const key = trimmed.slice(0, separatorIndex).trim();
+      const rawValue = trimmed.slice(separatorIndex + 1).trim();
+
+      if (rawValue) {
+        result[key] = this.normalizeFrontMatterValue(rawValue);
+        i += 1;
+        continue;
+      }
+
+      const nested = [];
+      let j = i + 1;
+      while (j < lines.length && indentOf(lines[j]) > baseIndent) {
+        nested.push(lines[j]);
+        j += 1;
+      }
+
+      if (nested.length && nested.every((child) => /^\s*-\s+/.test(child))) {
+        result[key] = nested.map((child) =>
+          this.normalizeFrontMatterValue(child.replace(/^\s*-\s+/, ""))
+        );
+      } else if (nested.length) {
+        result[key] = this.parseBlockMapping(nested);
+      } else {
+        result[key] = "";
+      }
+
+      i = j;
+    }
+
+    return result;
   },
 
   normalizeFrontMatterValue(value) {
@@ -246,17 +318,9 @@ module.exports = {
         return;
       }
 
-      const value = variables[key];
-
-      if (Array.isArray(value)) {
-        lines.push(`${key}:`);
-        value.forEach((item) => {
-          lines.push(`  - ${item}`);
-        });
-        return;
-      }
-
-      lines.push(`${key}: ${value}`);
+      this.serializeStructuredValue(key, variables[key], "").forEach((line) => {
+        lines.push(line);
+      });
     });
 
     if (!lines.length) {
@@ -264,6 +328,33 @@ module.exports = {
     }
 
     return `${bom}---${newline}${lines.join(newline)}${newline}---${newline}${newline}`;
+  },
+
+  // Serialize a scalar, array, or nested-object variable value into YAML
+  // lines for the rendered front matter block.
+  serializeStructuredValue(key, value, indent = "") {
+    const lines = [];
+
+    if (Array.isArray(value)) {
+      lines.push(`${indent}${key}:`);
+      value.forEach((item) => lines.push(`${indent}  - ${item}`));
+      return lines;
+    }
+
+    if (value && typeof value === "object") {
+      lines.push(`${indent}${key}:`);
+      Object.keys(value).forEach((childKey) => {
+        this.serializeStructuredValue(
+          childKey,
+          value[childKey],
+          `${indent}  `
+        ).forEach((line) => lines.push(line));
+      });
+      return lines;
+    }
+
+    lines.push(`${indent}${key}: ${value}`);
+    return lines;
   },
 
   // Remove the BOM and the surrounding --- fences so only the inner content

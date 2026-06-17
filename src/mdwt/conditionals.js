@@ -121,11 +121,11 @@ module.exports = {
       currentFile
     );
 
-    if (!Object.prototype.hasOwnProperty.call(rootVars, name)) {
+    const value = this.resolveVariablePath(rootVars, name);
+
+    if (value === undefined || value === null) {
       return false;
     }
-
-    const value = rootVars[name];
 
     if (Array.isArray(value)) {
       return value.map(String).includes(expectedValue);

@@ -121,6 +121,38 @@ module.exports = {
     return accumulated;
   },
 
+  // Resolve a variable name against the collected variables. Supports dotted
+  // notation to reach into nested mappings, e.g. "lists.checklist.drive-file".
+  // A direct (own) property match wins first, so flat names are unaffected.
+  resolveVariablePath(variables, name) {
+    if (!variables || typeof variables !== "object") {
+      return undefined;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(variables, name)) {
+      return variables[name];
+    }
+
+    if (name.indexOf(".") === -1) {
+      return undefined;
+    }
+
+    let current = variables;
+    for (const part of name.split(".")) {
+      if (
+        current === null ||
+        typeof current !== "object" ||
+        Array.isArray(current) ||
+        !Object.prototype.hasOwnProperty.call(current, part)
+      ) {
+        return undefined;
+      }
+      current = current[part];
+    }
+
+    return current;
+  },
+
   replaceVariables(content, variables, stack) {
     if (!content) {
       return content;
@@ -137,17 +169,21 @@ module.exports = {
         return this.raiseError(`Invalid variable name in ${currentFile}`);
       }
 
-      if (
-        !Object.prototype.hasOwnProperty.call(variables, name) ||
-        variables[name] === undefined ||
-        variables[name] === null
-      ) {
+      const value = this.resolveVariablePath(variables, name);
+
+      if (value === undefined || value === null) {
         return this.raiseError(
           `Variable "${name}" is used but not declared or null (referenced in ${currentFile}).`
         );
       }
 
-      return variables[name];
+      if (typeof value === "object" && !Array.isArray(value)) {
+        return this.raiseError(
+          `Variable "${name}" refers to a nested mapping, not a value (referenced in ${currentFile}). Use a dotted path to a leaf value.`
+        );
+      }
+
+      return value;
     });
   },
 
@@ -170,18 +206,22 @@ module.exports = {
         );
       }
 
-      if (
-        !Object.prototype.hasOwnProperty.call(variables, name) ||
-        variables[name] === undefined ||
-        variables[name] === null
-      ) {
+      const resolved = this.resolveVariablePath(variables, name);
+
+      if (resolved === undefined || resolved === null) {
         this.raiseError(
           `Variable "${name}" is used but not declared or null (referenced in ${currentFile}).`
         );
       }
 
+      if (typeof resolved === "object" && !Array.isArray(resolved)) {
+        this.raiseError(
+          `Variable "${name}" refers to a nested mapping, not a value (referenced in ${currentFile}). Use a dotted path to a leaf value.`
+        );
+      }
+
       placeholders.push(name);
-      return variables[name];
+      return resolved;
     });
 
     return { value, placeholders };
