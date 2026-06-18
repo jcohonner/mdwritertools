@@ -2,7 +2,7 @@
   "name": "mdwritertools-vscode",
   "displayName": "Markdown Writer Tools",
   "description": "Compose large Markdown documents from snippets: build/prebuild includes, export to clipboard, and export lists as CSV/JSON — powered by the mdwt engine.",
-  "version": "0.4.2",
+  "version": "0.5.1",
   "publisher": "jcohonner",
   "license": "MIT",
   "author": "Jérôme Cohonner",
