@@ -104,6 +104,12 @@ const cases = [
     renderer: renderDocument,
   },
   {
+    name: "deep-merges nested mappings split across entry and includes for dotted lookup",
+    entry: "tests/fixtures/dotted-merge.md",
+    expected: "tests/expected/dotted-merge.md",
+    renderer: renderDocument,
+  },
+  {
     name: "strips HTML comments outside fenced code blocks",
     entry: "tests/fixtures/comments.md",
     expected: "tests/expected/comments.md",

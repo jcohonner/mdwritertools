@@ -22,6 +22,15 @@ module.exports = {
         return;
       }
 
+      // Nested mappings cascade like the document itself: combine sub-keys
+      // from both sides (parent/root wins on leaf conflicts) instead of
+      // replacing the whole mapping, so dotted paths survive splits across
+      // the entry document and its includes.
+      if (this.isPlainObject(localValue) && this.isPlainObject(parentValue)) {
+        merged[key] = this.mergeVariables(localValue, parentValue);
+        return;
+      }
+
       // Scalar conflict: the parent (root/ancestor) value wins.
       merged[key] = parentValue;
     });
@@ -35,6 +44,12 @@ module.exports = {
     });
 
     return merged;
+  },
+
+  isPlainObject(value) {
+    return (
+      value !== null && typeof value === "object" && !Array.isArray(value)
+    );
   },
 
   mergeListValues(parentValue, localValue) {
